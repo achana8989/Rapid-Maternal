@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# Databases
+test.db
+*.sqlite3
+
+# Node / Expo
+node_modules/
+
+# OS
+.DS_Store
