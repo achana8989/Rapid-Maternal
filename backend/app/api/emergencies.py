@@ -35,3 +35,85 @@ def trigger_emergency(
         "status": emergency.status,
         "created_at": emergency.created_at
     }
+
+from datetime import datetime
+from fastapi import HTTPException
+from app.schemas.acknowledge import AcknowledgeRequest
+from app.services.escalation import escalate_unacknowledged_emergencies
+
+@router.post("/{emergency_id}/acknowledge")
+def acknowledge_emergency(
+    emergency_id: int,
+    payload: AcknowledgeRequest,
+    db: Session = Depends(get_db)
+):
+    emergency = db.query(MaternalEmergency).filter(
+        MaternalEmergency.id == emergency_id
+    ).first()
+
+    if not emergency:
+        raise HTTPException(status_code=404, detail="Emergency not found")
+
+    if emergency.status != "active":
+        raise HTTPException(status_code=400, detail="Emergency already acknowledged")
+
+    emergency.status = "acknowledged"
+    emergency.acknowledged_at = datetime.utcnow()
+    emergency.acknowledged_by = payload.acknowledged_by
+
+    db.commit()
+
+    return {
+        "id": emergency.id,
+        "status": emergency.status,
+        "acknowledged_at": emergency.acknowledged_at,
+        "acknowledged_by": emergency.acknowledged_by
+    }
+    
+@router.get("/")
+def list_emergencies(db: Session = Depends(get_db)):
+    emergencies = db.query(MaternalEmergency).order_by(
+        MaternalEmergency.created_at.desc()
+    ).all()
+
+    return [
+        {
+            "id": e.id,
+            "facility_id": e.facility_id,
+            "emergency_type": e.emergency_type,
+            "status": e.status,
+            "created_at": e.created_at,
+            "acknowledged_at": e.acknowledged_at,
+            "acknowledged_by": e.acknowledged_by
+        }
+        for e in emergencies
+    ]
+@router.get("/{emergency_id}")
+def get_emergency(
+    emergency_id: int,
+    db: Session = Depends(get_db)
+):
+    emergency = db.query(MaternalEmergency).filter(
+        MaternalEmergency.id == emergency_id
+    ).first()
+
+    if not emergency:
+        return {"detail": "Emergency not found"}
+
+    return {
+        "id": emergency.id,
+        "facility_id": emergency.facility_id,
+        "emergency_type": emergency.emergency_type,
+        "status": emergency.status,
+        "note": emergency.note,
+        "created_at": emergency.created_at,
+        "acknowledged_at": emergency.acknowledged_at,
+        "acknowledged_by": emergency.acknowledged_by,
+        "resolved_at": emergency.resolved_at
+    }
+
+
+@router.post("/escalate/run")
+def run_escalation(db: Session = Depends(get_db)):
+    count = escalate_unacknowledged_emergencies(db)
+    return {"escalated": count}

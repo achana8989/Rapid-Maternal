@@ -14,4 +14,7 @@ class MaternalEmergency(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     acknowledged_at = Column(DateTime, nullable=True)
+    acknowledged_by = Column(String, nullable=True)
     resolved_at = Column(DateTime, nullable=True)
+    escalation_Level = Column(Integer, default=0)
+    escalated_at = Column(DateTime, nullable=True)
