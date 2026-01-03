@@ -117,3 +117,57 @@ def get_emergency(
 def run_escalation(db: Session = Depends(get_db)):
     count = escalate_unacknowledged_emergencies(db)
     return {"escalated": count}
+
+@router.get("/")
+def list_emergencies(db: Session = Depends(get_db)):
+    emergencies = db.query(MaternalEmergency).order_by(
+        MaternalEmergency.created_at.desc()
+    ).all()
+
+    return [
+        {
+            "id": e.id,
+            "facility_id": e.facility_id,
+            "emergency_type": e.emergency_type,
+            "status": e.status,
+            "escalation_level": e.escalation_level,
+            "is_escalated": e.escalation_level > 0,
+            "created_at": e.created_at,
+            "acknowledged_at": e.acknowledged_at,
+            "acknowledged_by": e.acknowledged_by,
+            "escalated_at": e.escalated_at
+        }
+        for e in emergencies
+    ]
+    
+    @router.get("/escalated")
+    def escalated_emergencies(db: Session = Depends(get_db)):
+        emergencies = db.query(MaternalEmergency).filter(
+        MaternalEmergency.escalation_level > 0
+    ).order_by(MaternalEmergency.created_at.desc()).all()
+
+    return emergencies
+
+@router.get("/active")
+def active_emergencies(db: Session = Depends(get_db)):
+    emergencies = db.query(MaternalEmergency).filter(
+        MaternalEmergency.status == "active"
+    ).order_by(MaternalEmergency.created_at.desc()).all()
+
+    return emergencies
+
+@router.get("/summary")
+def emergency_summary(db: Session = Depends(get_db)):
+    total = db.query(MaternalEmergency).count()
+    active = db.query(MaternalEmergency).filter(
+        MaternalEmergency.status == "active"
+    ).count()
+    escalated = db.query(MaternalEmergency).filter(
+        MaternalEmergency.escalation_level > 0
+    ).count()
+
+    return {
+        "total_emergencies": total,
+        "active": active,
+        "escalated": escalated
+    }
