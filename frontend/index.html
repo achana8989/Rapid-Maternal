@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapid Maternal Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <h1>Rapid Maternal Emergency Dashboard</h1>
+
+    <div id="summary">
+        <p>Total: <span id="total"></span></p>
+        <p>Active: <span id="active"></span></p>
+        <p>Escalated: <span id="escalated"></span></p>
+    </div>
+
+    <table id="emergencies">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Facility</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Acknowledged By</th>
+                <th>Escalation</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
