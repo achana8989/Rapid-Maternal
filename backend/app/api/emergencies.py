@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.database import SessionLocal
 from app.db.models import MaternalEmergency
 from app.schemas.emergency import EmergencyCreate
+from app.db.models import NotificationLog
 
 router = APIRouter(
     prefix="/emergencies",
@@ -171,3 +172,21 @@ def emergency_summary(db: Session = Depends(get_db)):
         "active": active,
         "escalated": escalated
     }
+    from app.db.models import NotificationLog
+
+@router.get("/notifications/logs")
+def notification_logs(db: Session = Depends(get_db)):
+    logs = db.query(NotificationLog).order_by(
+        NotificationLog.sent_at.desc()
+    ).all()
+
+    return logs
+
+
+@router.get("/notifications/logs")
+def notification_logs(db: Session = Depends(get_db)):
+    logs = db.query(NotificationLog).order_by(
+        NotificationLog.sent_at.desc()
+    ).all()
+
+    return logs
