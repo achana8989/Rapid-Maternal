@@ -6,7 +6,7 @@ from .database import Base
 class MaternalEmergency(Base):
     __tablename__ = "maternal_emergencies"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     facility_id = Column(String, nullable=False)
     emergency_type = Column(String, nullable=False)
     status = Column(String, default="active")
@@ -29,3 +29,20 @@ class NotificationLog(Base):
     recipient = Column(String, nullable=False)
     sent_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="sent")
+
+# Register models defined outside this module so they are included in
+# metadata.create_all when `from app.db import models` is imported.
+try:
+    from app.models.user import User  # noqa: F401
+except Exception:
+    pass
+class User(Base):
+    __tablename__ = "users"
+    __table_args__ = {"extend_existing": True}  # <--- add this line
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    full_name = Column(String, nullable=True)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="user")
+    created_at = Column(DateTime, default=datetime.utcnow)
