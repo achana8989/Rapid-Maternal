@@ -89,29 +89,7 @@ def list_emergencies(db: Session = Depends(get_db)):
         }
         for e in emergencies
     ]
-@router.get("/{emergency_id}")
-def get_emergency(
-    emergency_id: int,
-    db: Session = Depends(get_db)
-):
-    emergency = db.query(MaternalEmergency).filter(
-        MaternalEmergency.id == emergency_id
-    ).first()
 
-    if not emergency:
-        return {"detail": "Emergency not found"}
-
-    return {
-        "id": emergency.id,
-        "facility_id": emergency.facility_id,
-        "emergency_type": emergency.emergency_type,
-        "status": emergency.status,
-        "note": emergency.note,
-        "created_at": emergency.created_at,
-        "acknowledged_at": emergency.acknowledged_at,
-        "acknowledged_by": emergency.acknowledged_by,
-        "resolved_at": emergency.resolved_at
-    }
 
 
 @router.post("/escalate/run")
@@ -169,6 +147,7 @@ def emergency_summary(db: Session = Depends(get_db)):
 
     return {
         "total_emergencies": total,
+        "total": total,
         "active": active,
         "escalated": escalated
     }
@@ -179,14 +158,40 @@ def notification_logs(db: Session = Depends(get_db)):
     logs = db.query(NotificationLog).order_by(
         NotificationLog.sent_at.desc()
     ).all()
+    return [
+        {
+            "id": l.id,
+            "emergency_id": l.emergency_id,
+            "escalation_level": l.escalation_level,
+            "channel": l.channel,
+            "recipient": l.recipient,
+            "sent_at": l.sent_at,
+            "status": l.status
+        }
+        for l in logs
+    ]
 
-    return logs
 
+@router.get("/{emergency_id}")
+def get_emergency(
+    emergency_id: int,
+    db: Session = Depends(get_db)
+):
+    emergency = db.query(MaternalEmergency).filter(
+        MaternalEmergency.id == emergency_id
+    ).first()
 
-@router.get("/notifications/logs")
-def notification_logs(db: Session = Depends(get_db)):
-    logs = db.query(NotificationLog).order_by(
-        NotificationLog.sent_at.desc()
-    ).all()
+    if not emergency:
+        raise HTTPException(status_code=404, detail="Emergency not found")
 
-    return logs
+    return {
+        "id": emergency.id,
+        "facility_id": emergency.facility_id,
+        "emergency_type": emergency.emergency_type,
+        "status": emergency.status,
+        "note": emergency.note,
+        "created_at": emergency.created_at,
+        "acknowledged_at": emergency.acknowledged_at,
+        "acknowledged_by": emergency.acknowledged_by,
+        "resolved_at": emergency.resolved_at
+    }

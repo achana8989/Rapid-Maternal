@@ -3,10 +3,7 @@ from app.core.config import settings
 from app.db.database import engine
 from app.db import models
 from app.api import emergencies
-
-
-# Create DB tables
-models.Base.metadata.create_all(bind=engine)
+from fastapi.middleware.cors import CORSMiddleware
 
 # FastAPI app instance (THIS MUST EXIST)
 app = FastAPI(
@@ -15,6 +12,18 @@ app = FastAPI(
     version="0.1.0",
     debug=settings.app_debug
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # temporary for testing, allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Create DB tables
+models.Base.metadata.create_all(bind=engine)
 
 # Include routers
 app.include_router(emergencies.router)
