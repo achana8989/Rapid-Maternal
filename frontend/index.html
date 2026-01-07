@@ -2,18 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Rapid Maternal Dashboard</title>
+    <title>Rapid Maternal Emergency Dashboard</title>
+
+    <!-- Mobile responsiveness -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Styles -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
     <h1>Rapid Maternal Emergency Dashboard</h1>
 
-    <div id="summary">
-        <p>Total: <span id="total"></span></p>
-        <p>Active: <span id="active"></span></p>
-        <p>Escalated: <span id="escalated"></span></p>
+    <!-- Summary Cards -->
+    <div class="cards">
+        <div class="card total">
+            <span class="label">Total</span>
+            <span id="total">0</span>
+        </div>
+
+        <div class="card active">
+            <span class="label">Active</span>
+            <span id="active">0</span>
+        </div>
+
+        <div class="card escalated">
+            <span class="label">Escalated</span>
+            <span id="escalated">0</span>
+        </div>
     </div>
 
+    <!-- Last Updated Indicator -->
+    <p id="last-updated" class="last-updated">
+    <span class="live-dot"></span>
+    Last updated: <span id="last-time">—</span>
+</p>
+
+
+    <!-- Emergency Table -->
     <table id="emergencies">
         <thead>
             <tr>
@@ -25,9 +51,13 @@
                 <th>Escalation</th>
             </tr>
         </thead>
-        <tbody></tbody>
+        <tbody>
+            <!-- Filled dynamically -->
+        </tbody>
     </table>
 
+    <!-- Dashboard Script -->
     <script src="js/dashboard.js"></script>
+
 </body>
 </html>
