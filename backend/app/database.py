@@ -1,11 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "sqlite:///./rapid_maternal.db"  # or your DB URL
+DATABASE_URL = "sqlite:///./rapidmaternal.db"
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}  # required for SQLite
+    connect_args={"check_same_thread": False}
 )
 
 SessionLocal = sessionmaker(
@@ -16,7 +16,7 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
-# ✅ ADD THIS FUNCTION (THIS IS WHAT WAS MISSING)
+# ✅ REQUIRED BY FASTAPI ROUTERS
 def get_db():
     db = SessionLocal()
     try:

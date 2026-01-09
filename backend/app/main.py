@@ -20,6 +20,11 @@ models.Base.metadata.create_all(bind=engine)
 
 from app.api import emergencies
 app.include_router(emergencies.router)
+from app.routers import auth
+app.include_router(auth.router)
+from app.routers import users
+app.include_router(users.router)
+
 
 @app.get("/")
 def root():

@@ -1,22 +1,21 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
-from app.core.config import settings
+from jose import jwt
+from app.core.security import SECRET_KEY, ALGORITHM
 
+# Define the OAuth2 scheme
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
-SECRET_KEY = settings.secret_key
-
-
-def require_role(required_roles: list):
-    def checker(token: str = Depends(oauth2_scheme)):
+def require_role(allowed_roles: list):
+    def role_checker(token: str = Depends(oauth2_scheme)):
         try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        except JWTError:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        except jwt.JWTError:
             raise HTTPException(status_code=401, detail="Invalid token")
 
-        if payload.get("role") not in required_roles:
+        role = payload.get("role")
+        if role not in allowed_roles:
             raise HTTPException(status_code=403, detail="Access denied")
-        return payload
 
-    return checker
+        return payload
+    return role_checker
