@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.websockets.routes import router as ws_router
 from app.db.database import engine
 from app.db import models   # 🔥 THIS IMPORT IS CRITICAL
 
@@ -24,7 +24,7 @@ from app.routers import auth
 app.include_router(auth.router)
 from app.routers import users
 app.include_router(users.router)
-
+app.include_router(ws_router)
 
 @app.get("/")
 def root():
