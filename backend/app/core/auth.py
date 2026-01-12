@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from jose import jwt
 from app.core.config import settings
+from app.database import get_db
 
 SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"

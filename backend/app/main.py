@@ -1,16 +1,18 @@
+# Ensure DB models are imported before initializing DB so tables are created
+import app.db.models  # register models with Base
+from app.db.database import init_db
+
+# create tables / run simple migrations
+init_db()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers import auth, emergencies, users, ws  # add other routers as needed
 
-from app.db.database import engine
-from app.db import models
-
-from app.routers.auth import router as auth_router
-from app.routers.users import router as users_router
-from app.routers.emergency import router as emergency_router
-from app.routers.ws_emergencies import router as ws_router
 
 app = FastAPI(title="Rapid Maternal API")
 
+# CORS (allow frontend)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,13 +21,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-models.Base.metadata.create_all(bind=engine)
+# Include routers
+app.include_router(auth.router)
+app.include_router(emergencies.router)
+app.include_router(users.router)
+app.include_router(ws.router)
 
-app.include_router(auth_router)
-app.include_router(users_router)
-app.include_router(emergency_router, prefix="/emergencies", tags=["emergencies"])
-app.include_router(ws_router)
-
-@app.get("/")
-def root():
-    return {"message": "Rapid Maternal Backend is running"}

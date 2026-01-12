@@ -6,10 +6,12 @@ from typing import Optional
 # =========================
 class UserCreate(BaseModel):
     full_name: str
-    email: EmailStr
+    username: str
+    email: Optional[EmailStr] = None  # optional
     password: str
     role: str  # admin, midwife, nurse, doctor
     facility_id: Optional[int] = None
+    facility_name: Optional[str] = None
 
 
 # =========================
@@ -18,9 +20,11 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     full_name: str
-    email: EmailStr
+    username: str
+    email: Optional[EmailStr] = None
     role: str
     facility_id: Optional[int]
+    facility_name: Optional[str] = None
 
     class Config:
         from_attributes = True  # ✅ Pydantic v2 compatible
@@ -30,5 +34,5 @@ class UserOut(BaseModel):
 # LOGIN REQUEST (AUTH)
 # =========================
 class LoginRequest(BaseModel):
-    email: EmailStr
+    username: str
     password: str

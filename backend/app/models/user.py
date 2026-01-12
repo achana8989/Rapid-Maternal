@@ -1,12 +1,13 @@
-from sqlalchemy import Column, Integer, String
-from app.database import Base
+from sqlalchemy import Column, Integer, String, DateTime
+from app.db.database import Base
+from datetime import datetime
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True)
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    full_name = Column(String)
     password_hash = Column(String, nullable=False)
-    role = Column(String, index=True)  # midwife, nurse, doctor, admin
-    facility_id = Column(Integer, nullable=True)
+    role = Column(String, default="user")
+    created_at = Column(DateTime, default=datetime.utcnow)
