@@ -1,62 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Rapid Maternal Emergency Dashboard</title>
-
-    <!-- Mobile responsiveness -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Styles -->
+    <meta charset="utf-8" />
+    <title>Rapid Maternal | Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        body{font-family:Arial; padding:20px}
+        header{display:flex;justify-content:space-between;align-items:center}
+        .cards{display:flex;gap:12px;margin-top:12px}
+        .card{background:#fff;padding:12px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+        table{width:100%;border-collapse:collapse;margin-top:12px}
+        th,td{padding:8px;border-bottom:1px solid #eee}
+    </style>
 </head>
 <body>
+    <header>
+        <h1>Rapid Maternal — Dashboard</h1>
+        <div>
+            <span id="userInfo"></span>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </header>
 
-    <h1>Rapid Maternal Emergency Dashboard</h1>
-
-    <!-- Summary Cards -->
     <div class="cards">
-        <div class="card total">
-            <span class="label">Total</span>
-            <span id="total">0</span>
-        </div>
-
-        <div class="card active">
-            <span class="label">Active</span>
-            <span id="active">0</span>
-        </div>
-
-        <div class="card escalated">
-            <span class="label">Escalated</span>
-            <span id="escalated">0</span>
-        </div>
+        <div class="card">Total: <strong id="total">0</strong></div>
+        <div class="card">Active: <strong id="active">0</strong></div>
+        <div class="card">Escalated: <strong id="escalated">0</strong></div>
+        <div class="card">Last: <span id="last-time">-</span></div>
     </div>
 
-    <!-- Last Updated Indicator -->
-    <p id="last-updated" class="last-updated">
-        <span class="live-dot"></span>
-        Last updated: <strong><span id="last-time">—</span></strong>
-    </p>
+    <section style="margin-top:18px">
+        <h3>Create Emergency</h3>
+        <form id="createForm">
+            <select id="emType">
+                <option value="bleeding">Bleeding</option>
+                <option value="obstructed_labour">Obstructed labour</option>
+                <option value="pre-eclampsia">Pre-eclampsia</option>
+            </select>
+            <input id="note" placeholder="Note (optional)" style="width:40%">
+            <button type="submit">Trigger</button>
+        </form>
+    </section>
 
-    <!-- Emergency Table -->
-    <table id="emergencies">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Facility</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Acknowledged By</th>
-                <th>Escalation</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Filled dynamically -->
-        </tbody>
-    </table>
+    <section style="margin-top:18px">
+        <h3>Emergencies</h3>
+        <table id="emergencies">
+            <thead><tr><th>ID</th><th>Facility</th><th>Type</th><th>Status</th><th>Acknowledged By</th><th>Escalation</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </section>
 
-    <!-- Dashboard Script -->
-    <script src="js/dashboard.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const user = getCurrentUser();
+        if (!user) window.location.href = "login.html";
 
+        const role = (user.role||"").toUpperCase();
+        // Redirect SUBDISTRICT_ADMIN to admin console (subadmin view)
+        if (role === 'SUBDISTRICT_ADMIN') {
+            window.location.href = 'admin.html';
+            throw new Error('Redirecting to admin console');
+        }
+
+        // Allow only MIDWIFE/CHPS to view this dashboard
+        if (!["MIDWIFE","CHPS"].includes(role)) {
+            window.location.href = "admin.html";
+        }
+
+        document.getElementById("userInfo").innerText = `${user.sub} (${user.role})`;
+
+        const API = "http://127.0.0.1:8000";
+        const token = localStorage.getItem("access_token");
+
+        async function loadEmergencies(){
+            try{
+                const res = await fetch(API+"/emergencies/", {headers:{"Authorization":"Bearer "+token}});
+                if(!res.ok) throw new Error('Failed to load');
+                const list = await res.json();
+                updateTable(list);
+                updateSummary(list);
+            }catch(err){
+                console.error(err);
+            }
+        }
+
+        function updateTable(emergencies){
+            const tbody = document.querySelector('#emergencies tbody');
+            tbody.innerHTML = '';
+            emergencies.forEach(e=>{
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${e.id}</td><td>${e.facility_name||e.facility_id||"-"}</td><td>${e.emergency_type}</td><td>${e.status}</td><td>${e.acknowledged_by||"-"}</td><td>${e.escalation_level||"-"}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateSummary(emergencies){
+            document.getElementById('total').innerText = emergencies.length;
+            document.getElementById('active').innerText = emergencies.filter(e=>e.status==='active' || e.status==='pending').length;
+            document.getElementById('escalated').innerText = emergencies.filter(e=>e.escalation_level && e.escalation_level!=='low').length;
+            document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
+        }
+
+        document.getElementById('createForm').addEventListener('submit', async (ev)=>{
+            ev.preventDefault();
+            const body = { facility_id: user.facility_id, emergency_type: document.getElementById('emType').value, note: document.getElementById('note').value };
+            try{
+                const res = await fetch(API+"/emergencies/", {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify(body)});
+                if(!res.ok){ const txt=await res.text(); alert('Failed: '+txt); return; }
+                await loadEmergencies();
+            }catch(err){ console.error(err); alert('Server error') }
+        });
+
+        // initial load
+        loadEmergencies();
+        // poll every 10s
+        setInterval(loadEmergencies, 10000);
+    </script>
 </body>
 </html>

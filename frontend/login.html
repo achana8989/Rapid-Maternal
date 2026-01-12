@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Rapid Maternal — Login</title>
+        <style>
+            :root{--bg:#f4f6f8;--card:#ffffff;--accent:#0069ff;--muted:#6b7280}
+            *{box-sizing:border-box}
+            body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial; background:var(--bg); color:#111}
+            .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+            .card{width:100%;max-width:420px;background:linear-gradient(180deg,#fff,#fbfdff);border-radius:12px;padding:28px;box-shadow:0 8px 30px rgba(16,24,40,0.08)}
+            .brand{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+            .logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#00b4ff);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+            h1{margin:0;font-size:18px}
+            p.lead{margin:6px 0 18px;color:var(--muted);font-size:14px}
+            form{display:flex;flex-direction:column;gap:10px}
+            input[type=text],input[type=password]{padding:12px 14px;border:1px solid #e6e9ef;border-radius:8px;font-size:14px}
+            button.primary{background:var(--accent);color:#fff;border:0;padding:12px;border-radius:10px;font-weight:600;cursor:pointer}
+            .helper{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+            .error{color:#b91c1c;font-size:13px;margin-top:8px}
+            @media (max-width:480px){.card{padding:18px;border-radius:10px}}
+        </style>
+    </head>
+    <body>
+        <div class="wrap">
+            <main class="card" role="main" aria-labelledby="login-heading">
+                <div class="brand">
+                    <div class="logo">RM</div>
+                    <div>
+                        <h1 id="login-heading">Rapid Maternal</h1>
+                        <div class="lead">Maternal Emergency Response System</div>
+                    </div>
+                </div>
+
+                <form id="loginForm" autocomplete="on">
+                    <label for="username" style="font-size:13px;color:var(--muted)">Username</label>
+                    <input id="username" name="username" type="text" inputmode="text" placeholder="your username" required />
+
+                    <label for="password" style="font-size:13px;color:var(--muted)">Password</label>
+                    <input id="password" name="password" type="password" placeholder="••••••••" required />
+
+                    <div class="helper">
+                        <div style="font-size:13px;color:var(--muted)">Not your device? <a href="#" onclick="localStorage.removeItem('access_token')">Clear</a></div>
+                    </div>
+
+                    <button type="submit" class="primary">Sign in</button>
+
+                    <div id="error" class="error" role="alert" aria-live="polite"></div>
+                </form>
+            </main>
+        </div>
+
+        <script src="js/auth.js"></script>
+        <script>
+            const form = document.getElementById('loginForm');
+            const err = document.getElementById('error');
+            form.addEventListener('submit', async (e)=>{
+                e.preventDefault();
+                err.textContent = '';
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                try{
+                    const res = await fetch('http://127.0.0.1:8000/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username,password})});
+                    if (!res.ok){
+                        let detail = 'Invalid username or password';
+                        try{ const j = await res.json(); detail = j.detail || detail }catch{};
+                        err.textContent = detail; return;
+                    }
+                    const data = await res.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+                    const role = (payload.role||'').toUpperCase();
+                    if (role === 'MIDWIFE' || role === 'CHPS'){
+                        window.location.href = 'index.html';
+                    } else if (['ADMIN','FACILITY_ADMIN','DISTRICT_ADMIN','SUBDISTRICT_ADMIN'].includes(role)){
+                        window.location.href = 'admin.html';
+                    } else {
+                        err.textContent = 'Unknown role';
+                    }
+                }catch(err){
+                    console.error(err);
+                    err.textContent = 'Server not reachable';
+                }
+            });
+        </script>
+    </body>
+</html>

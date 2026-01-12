@@ -5,6 +5,22 @@
 // ⚠️ Make sure you have a "sounds/alert.mp3" file in your frontend folder
 const alertSound = new Audio("/sounds/alert.mp3");
 
+// Read token to determine current user/role so admin/subadmin flows work
+const _token = localStorage.getItem("access_token");
+let currentUser = null;
+let userRole = undefined;
+if (_token) {
+  try {
+    currentUser = JSON.parse(atob(_token.split('.')[1]));
+    userRole = (currentUser.role || '').toUpperCase();
+  } catch (e) {
+    console.warn('Failed to parse token in dashboard.js', e);
+  }
+}
+// expose globally for other scripts
+window.currentUser = currentUser;
+window.userRole = userRole;
+
 // Summary elements
 const totalEl = document.getElementById("total");
 const activeEl = document.getElementById("active");
@@ -21,32 +37,41 @@ let currentEmergencies = new Map();
    WebSocket Setup
 ========================= */
 const WS_URL = "ws://127.0.0.1:8000/ws/emergencies"; // Make sure backend has a /ws/emergencies endpoint
-const ws = new WebSocket(WS_URL);
+let ws;
+let reconnectDelay = 1000;
+function connectWS(){
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    console.log("✅ WebSocket connected");
+    reconnectDelay = 1000;
+  };
 
-ws.onopen = () => {
-  console.log("✅ WebSocket connected");
-};
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      // When server sends a simple update trigger, just reload via polling
+      if (!data) return;
+      if (data.emergencies) {
+        updateSummary(data.summary);
+        updateEmergencies(data.emergencies);
+      } else if (data.event === 'update') {
+        // let polling handle refresh; call the global loader if available
+        if (typeof loadEmergencies === 'function') loadEmergencies();
+      }
+      updateLastUpdated();
+    } catch (err) {
+      console.error("WebSocket message error:", err);
+    }
+  };
 
-ws.onmessage = (event) => {
-  try {
-    const data = JSON.parse(event.data);
+  ws.onclose = () => {
+    console.warn("⚠️ WebSocket closed. Reconnecting in "+(reconnectDelay/1000)+"s...");
+    setTimeout(connectWS, reconnectDelay);
+    reconnectDelay = Math.min(30000, reconnectDelay * 2);
+  };
+}
 
-    if (!data || !data.emergencies) return;
-
-    updateSummary(data.summary);
-    updateEmergencies(data.emergencies);
-    updateLastUpdated();
-  } catch (err) {
-    console.error("WebSocket message error:", err);
-  }
-};
-
-ws.onclose = () => {
-  console.warn("⚠️ WebSocket closed. Reconnecting in 5s...");
-  setTimeout(() => {
-    location.reload(); // simple reconnect strategy
-  }, 5000);
-};
+connectWS();
 
 /* =========================
    Update Summary Cards
