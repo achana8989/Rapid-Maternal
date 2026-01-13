@@ -12,6 +12,8 @@ class MaternalEmergency(Base):
     emergency_type = Column(String, nullable=False)
     status = Column(String, default="pending")
     note = Column(String, nullable=True)
+    acknowledged_by = Column(String, nullable=True)
+    acknowledged_at = Column(DateTime, nullable=True)
     escalation_level = Column(String, default="low")
     created_at = Column(DateTime, default=datetime.utcnow)
 

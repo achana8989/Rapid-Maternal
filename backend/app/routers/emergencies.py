@@ -63,7 +63,7 @@ async def acknowledge_emergency(
     if not emergency:
         raise HTTPException(status_code=404, detail="Emergency not found")
 
-    if emergency.status != "active":
+    if emergency.status != "pending":
         raise HTTPException(status_code=400, detail="Emergency already acknowledged")
 
     role = (current_user.get("role") or "").upper()
@@ -74,7 +74,7 @@ async def acknowledge_emergency(
 
     # SUBDISTRICT_ADMIN or ADMIN can acknowledge any emergency
 
-    emergency.status = "acknowledged"
+    emergency.status = "active"
     emergency.acknowledged_at = datetime.utcnow()
     emergency.acknowledged_by = payload.acknowledged_by
     db.commit()

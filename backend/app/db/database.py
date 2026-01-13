@@ -55,5 +55,19 @@ def init_db():
                     except Exception:
                         # best-effort: ignore failures
                         pass
+                # Add columns to maternal_emergencies if missing
+                res2 = conn.execute(sqlalchemy.text("PRAGMA table_info('maternal_emergencies')"))
+                existing2 = {row[1] for row in res2.fetchall()} if res2 is not None else set()
+                me_migrations = []
+                if 'acknowledged_by' not in existing2:
+                    me_migrations.append("ALTER TABLE maternal_emergencies ADD COLUMN acknowledged_by VARCHAR")
+                if 'acknowledged_at' not in existing2:
+                    me_migrations.append("ALTER TABLE maternal_emergencies ADD COLUMN acknowledged_at DATETIME")
+
+                for sql in me_migrations:
+                    try:
+                        conn.execute(sqlalchemy.text(sql))
+                    except Exception:
+                        pass
         except Exception:
             pass
